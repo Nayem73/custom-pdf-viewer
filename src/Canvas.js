@@ -17,7 +17,7 @@ const Canvas = () => {
     context.strokeStyle = 'black';
     context.lineWidth = 2;
     context.lineCap = 'round';
-    
+
     contextRef.current = context;
   }, []);
 
@@ -51,15 +51,17 @@ const Canvas = () => {
 
   return (
     <div>
-      <Button variant="contained" color="primary" onClick={() => setMode('pencil')}>
-        Pencil
-      </Button>
-      <Button variant="contained" color="secondary" onClick={() => setMode('eraser')}>
-        Eraser
-      </Button>
+      <div style={{ position: 'absolute', zIndex: 10 }}>
+        <Button variant="contained" color="primary" onClick={() => setMode('pencil')}>
+          Pencil
+        </Button>
+        <Button variant="contained" color="secondary" onClick={() => setMode('eraser')}>
+          Eraser
+        </Button>
+      </div>
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', top: 0, left: 0 }}
+        style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
