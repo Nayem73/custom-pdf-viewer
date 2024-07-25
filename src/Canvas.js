@@ -4,7 +4,6 @@ const Canvas = () => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [paths, setPaths] = useState([]); // To store the drawings
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -12,14 +11,17 @@ const Canvas = () => {
     context.strokeStyle = 'black';
     context.lineWidth = 2;
     context.lineCap = 'round';
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     contextRef.current = context;
   }, []);
 
   const startDrawing = (e) => {
     const { offsetX, offsetY } = e.nativeEvent;
-    const newPath = { x: offsetX, y: offsetY, isStartingPoint: true };
-    setPaths((prevPaths) => [...prevPaths, newPath]);
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(offsetX, offsetY);
     setIsDrawing(true);
   };
 
@@ -27,35 +29,13 @@ const Canvas = () => {
     if (!isDrawing) return;
 
     const { offsetX, offsetY } = e.nativeEvent;
-    const newPath = { x: offsetX, y: offsetY, isStartingPoint: false };
-
-    setPaths((prevPaths) => {
-      const updatedPaths = [...prevPaths, newPath];
-      redrawPaths(updatedPaths);
-      return updatedPaths;
-    });
+    contextRef.current.lineTo(offsetX, offsetY);
+    contextRef.current.stroke();
   };
 
   const stopDrawing = () => {
+    contextRef.current.closePath();
     setIsDrawing(false);
-  };
-
-  const redrawPaths = (paths) => {
-    const canvas = canvasRef.current;
-    const context = contextRef.current;
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    context.beginPath();
-    paths.forEach((point) => {
-      if (point.isStartingPoint) {
-        context.moveTo(point.x, point.y);
-      } else {
-        context.lineTo(point.x, point.y);
-      }
-      context.stroke();
-    });
-    context.closePath();
   };
 
   return (
