@@ -57,8 +57,13 @@ const Canvas = () => {
   };
 
   const getCursorStyle = () => {
-    if (mode === 'eraser') return `url(${eraserIcon}), auto`;
-    if (mode === 'pencil') return `url(${pencilIcon}), auto`;
+    // Set the hotspot to the tip of the pencil or eraser icon
+    const iconSize = 26; // Size of the icon
+    const hotspotX = iconSize / 2 - 9; // Adjust this value if necessary
+    const hotspotY = iconSize; // Set hotspot to the bottom of the icon
+
+    if (mode === 'eraser') return `url(${eraserIcon}) ${hotspotX} ${hotspotY}, auto`;
+    if (mode === 'pencil') return `url(${pencilIcon}) ${hotspotX} ${hotspotY}, auto`;
     return 'auto'; // Default cursor
   };
 
