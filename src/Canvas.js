@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@mui/material';
+import pencilIcon from './asset/pencil.jpg';
+import eraserIcon from './asset/eraser.png';
 
 const Canvas = () => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [mode, setMode] = useState('pencil'); // Default mode is pencil
+  const [mode, setMode] = useState(null); // Default mode is null
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,6 +24,8 @@ const Canvas = () => {
   }, []);
 
   const startDrawing = (e) => {
+    if (mode === null) return; // Do nothing if no mode is selected
+
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
@@ -29,11 +33,10 @@ const Canvas = () => {
   };
 
   const draw = (e) => {
-    if (!isDrawing) return;
+    if (!isDrawing || mode === null) return; // Do nothing if not drawing or no mode is selected
 
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current.lineTo(offsetX, offsetY);
-    contextRef.current.stroke();
 
     if (mode === 'eraser') {
       contextRef.current.globalCompositeOperation = 'destination-out';
@@ -42,26 +45,51 @@ const Canvas = () => {
       contextRef.current.globalCompositeOperation = 'source-over';
       contextRef.current.lineWidth = 2; // Pencil size
     }
+
+    contextRef.current.stroke();
   };
 
   const stopDrawing = () => {
+    if (mode === null) return; // Do nothing if no mode is selected
+
     contextRef.current.closePath();
     setIsDrawing(false);
+  };
+
+  const getCursorStyle = () => {
+    if (mode === 'eraser') return `url(${eraserIcon}), auto`;
+    if (mode === 'pencil') return `url(${pencilIcon}), auto`;
+    return 'auto'; // Default cursor
   };
 
   return (
     <div>
       <div style={{ position: 'absolute', zIndex: 10 }}>
-        <Button variant="contained" color="primary" onClick={() => setMode('pencil')}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setMode('pencil')}
+        >
           Pencil
         </Button>
-        <Button variant="contained" color="secondary" onClick={() => setMode('eraser')}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => setMode('eraser')}
+        >
           Eraser
         </Button>
+        {/* Add your PDF Viewer button here */}
       </div>
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          zIndex: 1,
+          cursor: getCursorStyle(),
+        }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
