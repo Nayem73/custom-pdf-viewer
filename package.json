@@ -2,6 +2,7 @@
   "name": "custom-pdf-viewer",
   "version": "0.1.0",
   "private": true,
+  "main": "main.js",
   "dependencies": {
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
