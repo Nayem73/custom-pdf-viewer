@@ -8,6 +8,7 @@ const Canvas = () => {
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [mode, setMode] = useState(null); // Default mode is null
+  const [lastPoint, setLastPoint] = useState(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -16,9 +17,10 @@ const Canvas = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    context.strokeStyle = 'black';
+    context.strokeStyle = 'black'; // Default color
     context.lineWidth = 2;
-    context.lineCap = 'round';
+    context.lineCap = 'round'; // Smooth end of lines
+    context.lineJoin = 'round'; // Smooth joins between lines
 
     contextRef.current = context;
   }, []);
@@ -30,24 +32,35 @@ const Canvas = () => {
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
     setIsDrawing(true);
+    setLastPoint({ x: offsetX, y: offsetY });
   };
 
   const draw = (e) => {
     if (!isDrawing || mode === null) return; // Do nothing if not drawing or no mode is selected
 
     const { offsetX, offsetY } = e.nativeEvent;
-    contextRef.current.lineTo(offsetX, offsetY);
 
     if (mode === 'eraser') {
       contextRef.current.globalCompositeOperation = 'destination-out';
       contextRef.current.lineWidth = 10; // Eraser size
     } else {
       contextRef.current.globalCompositeOperation = 'source-over';
-      contextRef.current.lineWidth = 1; // Pencil size
+      contextRef.current.lineWidth = 2; // Pencil size
       contextRef.current.strokeStyle = 'red'; // Pencil color
     }
 
+    // Use quadratic Bézier curve for smooth drawing
+    if (lastPoint) {
+      contextRef.current.quadraticCurveTo(
+        lastPoint.x,
+        lastPoint.y,
+        (lastPoint.x + offsetX) / 2,
+        (lastPoint.y + offsetY) / 2
+      );
+    }
+    
     contextRef.current.stroke();
+    setLastPoint({ x: offsetX, y: offsetY });
   };
 
   const stopDrawing = () => {
@@ -55,6 +68,7 @@ const Canvas = () => {
 
     contextRef.current.closePath();
     setIsDrawing(false);
+    setLastPoint(null);
   };
 
   const getCursorStyle = () => {
