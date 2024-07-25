@@ -43,7 +43,8 @@ const Canvas = () => {
       contextRef.current.lineWidth = 10; // Eraser size
     } else {
       contextRef.current.globalCompositeOperation = 'source-over';
-      contextRef.current.lineWidth = 2; // Pencil size
+      contextRef.current.lineWidth = 1; // Pencil size
+      contextRef.current.strokeStyle = 'red'; // Pencil color
     }
 
     contextRef.current.stroke();
