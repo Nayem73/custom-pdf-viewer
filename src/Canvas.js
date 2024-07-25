@@ -1,20 +1,23 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Button } from '@mui/material';
 
 const Canvas = () => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [mode, setMode] = useState('pencil'); // Default mode is pencil
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     context.strokeStyle = 'black';
     context.lineWidth = 2;
     context.lineCap = 'round';
     
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
     contextRef.current = context;
   }, []);
 
@@ -31,6 +34,14 @@ const Canvas = () => {
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
+
+    if (mode === 'eraser') {
+      contextRef.current.globalCompositeOperation = 'destination-out';
+      contextRef.current.lineWidth = 10; // Eraser size
+    } else {
+      contextRef.current.globalCompositeOperation = 'source-over';
+      contextRef.current.lineWidth = 2; // Pencil size
+    }
   };
 
   const stopDrawing = () => {
@@ -39,16 +50,22 @@ const Canvas = () => {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={window.innerWidth}
-      height={window.innerHeight}
-      style={{ position: 'absolute', top: 0, left: 0 }}
-      onMouseDown={startDrawing}
-      onMouseMove={draw}
-      onMouseUp={stopDrawing}
-      onMouseOut={stopDrawing}
-    />
+    <div>
+      <Button variant="contained" color="primary" onClick={() => setMode('pencil')}>
+        Pencil
+      </Button>
+      <Button variant="contained" color="secondary" onClick={() => setMode('eraser')}>
+        Eraser
+      </Button>
+      <canvas
+        ref={canvasRef}
+        style={{ position: 'absolute', top: 0, left: 0 }}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseOut={stopDrawing}
+      />
+    </div>
   );
 };
 
