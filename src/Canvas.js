@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@mui/material';
-import pencilIcon from './asset/pencil.jpg';
+import pencilIcon from './asset/pencil.png';
 import eraserIcon from './asset/eraser.png';
 
 const Canvas = () => {
