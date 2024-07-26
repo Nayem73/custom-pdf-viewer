@@ -58,7 +58,7 @@ const Canvas = () => {
     const context = contextRef.current;
 
     if (mode === 'eraser') {
-      removeStraightLines(scaledX, scaledY);
+      removeLineAtPoint(scaledX, scaledY);
     } else {
       context.globalCompositeOperation = 'source-over';
       context.lineWidth = 2; // Pencil size
@@ -86,60 +86,25 @@ const Canvas = () => {
     setCurrentPath([]);
   };
 
-  const removeStraightLines = (x, y) => {
+  const removeLineAtPoint = (x, y) => {
     const radius = eraserSize / 2;
     const newPaths = paths.map(path => {
       if (Array.isArray(path)) {
-        return removeStraightSegmentFromPath(path, x, y, radius);
+        return path.filter((point, index) => {
+          if (index === 0) return true;
+          const prevPoint = path[index - 1];
+          return !isPointNearLine(prevPoint, point, x, y, radius);
+        });
       }
       return path; // Preserve non-array paths if any
     });
 
-    setPaths(newPaths.filter(path => Array.isArray(path) && path.length > 0));
+    setPaths(newPaths.filter(path => Array.isArray(path) && path.length > 1));
 
     // Redraw all remaining paths
     const context = contextRef.current;
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     redrawPaths(context, newPaths.flat());
-  };
-
-  const removeStraightSegmentFromPath = (path, x, y, radius) => {
-    let newPath = [];
-    let eraseStarted = false;
-    let lastPoint = null;
-
-    for (let i = 0; i < path.length - 1; i++) {
-      const start = path[i];
-      const end = path[i + 1];
-      
-      if (eraseStarted) {
-        if (!isPointNearLine(start, end, x, y, radius)) {
-          eraseStarted = false;
-          newPath.push(start);
-        }
-      } else {
-        if (isPointNearLine(start, end, x, y, radius)) {
-          eraseStarted = true;
-          if (lastPoint) {
-            newPath.push(lastPoint);
-          }
-          if (i > 0) {
-            newPath.push(start);
-          }
-        } else {
-          newPath.push(start);
-        }
-      }
-      lastPoint = end;
-    }
-    
-    if (eraseStarted) {
-      if (lastPoint) {
-        newPath.push(lastPoint);
-      }
-    }
-
-    return newPath;
   };
 
   const isPointNearLine = (start, end, x, y, radius) => {
