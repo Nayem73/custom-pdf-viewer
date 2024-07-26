@@ -58,7 +58,7 @@ const Canvas = () => {
     const context = contextRef.current;
 
     if (mode === 'eraser') {
-      removeLines(scaledX, scaledY);
+      removeStraightLines(scaledX, scaledY);
     } else {
       context.globalCompositeOperation = 'source-over';
       context.lineWidth = 2; // Pencil size
@@ -86,26 +86,60 @@ const Canvas = () => {
     setCurrentPath([]);
   };
 
-  const removeLines = (x, y) => {
+  const removeStraightLines = (x, y) => {
     const radius = eraserSize / 2;
-    const newPaths = paths.filter(path => !isLineWithinEraser(path, x, y, radius));
-    setPaths(newPaths);
+    const newPaths = paths.map(path => {
+      if (Array.isArray(path)) {
+        return removeStraightSegmentFromPath(path, x, y, radius);
+      }
+      return path; // Preserve non-array paths if any
+    });
+
+    setPaths(newPaths.filter(path => Array.isArray(path) && path.length > 0));
 
     // Redraw all remaining paths
     const context = contextRef.current;
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    redrawPaths(context, newPaths);
+    redrawPaths(context, newPaths.flat());
   };
 
-  const isLineWithinEraser = (line, x, y, radius) => {
-    for (let i = 0; i < line.length - 1; i++) {
-      const start = line[i];
-      const end = line[i + 1];
-      if (isPointNearLine(start, end, x, y, radius)) {
-        return true;
+  const removeStraightSegmentFromPath = (path, x, y, radius) => {
+    let newPath = [];
+    let eraseStarted = false;
+    let lastPoint = null;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const start = path[i];
+      const end = path[i + 1];
+      
+      if (eraseStarted) {
+        if (!isPointNearLine(start, end, x, y, radius)) {
+          eraseStarted = false;
+          newPath.push(start);
+        }
+      } else {
+        if (isPointNearLine(start, end, x, y, radius)) {
+          eraseStarted = true;
+          if (lastPoint) {
+            newPath.push(lastPoint);
+          }
+          if (i > 0) {
+            newPath.push(start);
+          }
+        } else {
+          newPath.push(start);
+        }
+      }
+      lastPoint = end;
+    }
+    
+    if (eraseStarted) {
+      if (lastPoint) {
+        newPath.push(lastPoint);
       }
     }
-    return false;
+
+    return newPath;
   };
 
   const isPointNearLine = (start, end, x, y, radius) => {
@@ -140,15 +174,17 @@ const Canvas = () => {
 
   const redrawPaths = (context, paths) => {
     paths.forEach((path) => {
-      context.beginPath();
-      path.forEach((point, index) => {
-        if (index === 0) {
-          context.moveTo(point.x, point.y);
-        } else {
-          context.lineTo(point.x, point.y);
-        }
-      });
-      context.stroke();
+      if (Array.isArray(path)) {
+        context.beginPath();
+        path.forEach((point, index) => {
+          if (index === 0) {
+            context.moveTo(point.x, point.y);
+          } else {
+            context.lineTo(point.x, point.y);
+          }
+        });
+        context.stroke();
+      }
     });
   };
 
