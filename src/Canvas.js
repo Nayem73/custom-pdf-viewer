@@ -9,36 +9,45 @@ const Canvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [mode, setMode] = useState(null); // Default mode is null
   const [lastPoint, setLastPoint] = useState(null);
+  const [paths, setPaths] = useState([]); // Store paths for redrawing
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth * window.devicePixelRatio;
+    canvas.height = window.innerHeight * window.devicePixelRatio;
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
 
     context.strokeStyle = 'black'; // Default color
     context.lineWidth = 2;
     context.lineCap = 'round'; // Smooth end of lines
     context.lineJoin = 'round'; // Smooth joins between lines
+    context.imageSmoothingEnabled = true; // Enable image smoothing
 
     contextRef.current = context;
-  }, []);
+
+    // Redraw all paths when the component mounts
+    redrawPaths(context, paths);
+  }, [paths]);
 
   const startDrawing = (e) => {
     if (mode === null) return; // Do nothing if no mode is selected
 
     const { offsetX, offsetY } = e.nativeEvent;
     contextRef.current.beginPath();
-    contextRef.current.moveTo(offsetX, offsetY);
+    contextRef.current.moveTo(offsetX * window.devicePixelRatio, offsetY * window.devicePixelRatio);
     setIsDrawing(true);
-    setLastPoint({ x: offsetX, y: offsetY });
+    setLastPoint({ x: offsetX * window.devicePixelRatio, y: offsetY * window.devicePixelRatio });
   };
 
   const draw = (e) => {
     if (!isDrawing || mode === null) return; // Do nothing if not drawing or no mode is selected
 
     const { offsetX, offsetY } = e.nativeEvent;
+    const scaledX = offsetX * window.devicePixelRatio;
+    const scaledY = offsetY * window.devicePixelRatio;
 
     if (mode === 'eraser') {
       contextRef.current.globalCompositeOperation = 'destination-out';
@@ -49,18 +58,16 @@ const Canvas = () => {
       contextRef.current.strokeStyle = 'red'; // Pencil color
     }
 
-    // Use quadratic Bézier curve for smooth drawing
     if (lastPoint) {
       contextRef.current.quadraticCurveTo(
         lastPoint.x,
         lastPoint.y,
-        (lastPoint.x + offsetX) / 2,
-        (lastPoint.y + offsetY) / 2
+        (lastPoint.x + scaledX) / 2,
+        (lastPoint.y + scaledY) / 2
       );
+      contextRef.current.stroke();
+      setLastPoint({ x: scaledX, y: scaledY });
     }
-    
-    contextRef.current.stroke();
-    setLastPoint({ x: offsetX, y: offsetY });
   };
 
   const stopDrawing = () => {
@@ -69,10 +76,19 @@ const Canvas = () => {
     contextRef.current.closePath();
     setIsDrawing(false);
     setLastPoint(null);
+
+    // Add the current path to the paths array
+    const newPath = contextRef.current.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setPaths([...paths, newPath]);
+  };
+
+  const redrawPaths = (context, paths) => {
+    paths.forEach((path) => {
+      context.putImageData(path, 0, 0);
+    });
   };
 
   const getCursorStyle = () => {
-    // Set the hotspot to the tip of the pencil or eraser icon
     const iconSize = 26; // Size of the icon
     const hotspotX = iconSize / 2 - 9; // Adjust this value if necessary
     const hotspotY = iconSize; // Set hotspot to the bottom of the icon
