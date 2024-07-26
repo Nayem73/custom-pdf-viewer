@@ -10,6 +10,7 @@ const Canvas = () => {
   const [mode, setMode] = useState(null); // Default mode is null
   const [lastPoint, setLastPoint] = useState(null);
   const [paths, setPaths] = useState([]); // Store paths for redrawing
+  const eraserSize = 20; // Size of the eraser, adjust as needed
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,22 +52,26 @@ const Canvas = () => {
 
     if (mode === 'eraser') {
       contextRef.current.globalCompositeOperation = 'destination-out';
-      contextRef.current.lineWidth = 10; // Eraser size
+      contextRef.current.lineWidth = eraserSize; // Eraser size
+      contextRef.current.lineCap = 'round';
+      contextRef.current.lineJoin = 'round';
+      contextRef.current.arc(scaledX, scaledY, eraserSize / 2, 0, 2 * Math.PI); // Use circle for eraser
+      contextRef.current.fill();
     } else {
       contextRef.current.globalCompositeOperation = 'source-over';
       contextRef.current.lineWidth = 2; // Pencil size
       contextRef.current.strokeStyle = 'red'; // Pencil color
-    }
 
-    if (lastPoint) {
-      contextRef.current.quadraticCurveTo(
-        lastPoint.x,
-        lastPoint.y,
-        (lastPoint.x + scaledX) / 2,
-        (lastPoint.y + scaledY) / 2
-      );
-      contextRef.current.stroke();
-      setLastPoint({ x: scaledX, y: scaledY });
+      if (lastPoint) {
+        contextRef.current.quadraticCurveTo(
+          lastPoint.x,
+          lastPoint.y,
+          (lastPoint.x + scaledX) / 2,
+          (lastPoint.y + scaledY) / 2
+        );
+        contextRef.current.stroke();
+        setLastPoint({ x: scaledX, y: scaledY });
+      }
     }
   };
 
