@@ -88,18 +88,39 @@ const Canvas = () => {
 
   const removeLineAtPoint = (x, y) => {
     const radius = eraserSize / 2;
-    const newPaths = paths.map(path => {
+    const newPaths = paths.reduce((acc, path) => {
       if (Array.isArray(path)) {
-        return path.filter((point, index) => {
-          if (index === 0) return true;
-          const prevPoint = path[index - 1];
-          return !isPointNearLine(prevPoint, point, x, y, radius);
-        });
-      }
-      return path; // Preserve non-array paths if any
-    });
+        let splitPath = [];
+        let currentSegment = [];
 
-    setPaths(newPaths.filter(path => Array.isArray(path) && path.length > 1));
+        path.forEach((point, index) => {
+          if (index === 0) {
+            currentSegment.push(point);
+          } else {
+            const prevPoint = path[index - 1];
+            if (isPointNearLine(prevPoint, point, x, y, radius)) {
+              if (currentSegment.length > 0) {
+                splitPath.push(currentSegment);
+                currentSegment = [];
+              }
+            } else {
+              currentSegment.push(point);
+            }
+          }
+        });
+
+        if (currentSegment.length > 0) {
+          splitPath.push(currentSegment);
+        }
+
+        acc.push(...splitPath.filter(segment => segment.length > 1));
+      } else {
+        acc.push(path); // Preserve non-array paths if any
+      }
+      return acc;
+    }, []);
+
+    setPaths(newPaths);
 
     // Redraw all remaining paths
     const context = contextRef.current;
