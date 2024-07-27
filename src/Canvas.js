@@ -104,7 +104,7 @@ const Canvas = () => {
     // Redraw all remaining paths
     const context = contextRef.current;
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    redrawPaths(context, newPaths.flat());
+    redrawPaths(context, newPaths);
   };
 
   const isPointNearLine = (start, end, x, y, radius) => {
