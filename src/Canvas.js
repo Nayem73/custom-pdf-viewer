@@ -162,6 +162,8 @@ const Canvas = () => {
     paths.forEach((path) => {
       if (Array.isArray(path)) {
         context.beginPath();
+        context.lineWidth = 2.5; // Pencil size
+        context.strokeStyle = 'red'; // Ensure paths are drawn in red
         path.forEach((point, index) => {
           if (index === 0) {
             context.moveTo(point.x, point.y);
