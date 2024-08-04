@@ -3,14 +3,14 @@ import { Button } from '@mui/material';
 import pencilIcon from './asset/pencil.png';
 import eraserIcon from './asset/eraser.png';
 
-const Canvas = () => {
+const Canvas = ({ viewerRef, zoom }) => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [mode, setMode] = useState(null); // Default mode is null
-  const [paths, setPaths] = useState([]); // Store paths as arrays of points
-  const [currentPath, setCurrentPath] = useState([]); // Store points for the current path
-  const eraserSize = 20; // Size of the eraser, adjust as needed
+  const [mode, setMode] = useState(null);
+  const [paths, setPaths] = useState([]);
+  const [currentPath, setCurrentPath] = useState([]);
+  const eraserSize = 20;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -21,24 +21,32 @@ const Canvas = () => {
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
 
-    context.strokeStyle = 'black'; // Default color
+    context.strokeStyle = 'black';
     context.lineWidth = 2;
-    context.lineCap = 'round'; // Smooth end of lines
-    context.lineJoin = 'round'; // Smooth joins between lines
-    context.imageSmoothingEnabled = true; // Enable image smoothing
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.imageSmoothingEnabled = true;
 
     contextRef.current = context;
-
-    // Redraw all paths when the component mounts
     redrawPaths(context, paths);
   }, [paths]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = contextRef.current;
+
+    canvas.style.transform = `scale(${zoom})`;
+    canvas.style.transformOrigin = 'top left';
+
+    redrawPaths(context, paths);
+  }, [zoom]);
+
   const startDrawing = (e) => {
-    if (mode === null) return; // Do nothing if no mode is selected
+    if (mode === null) return;
 
     const { offsetX, offsetY } = e.nativeEvent;
-    const scaledX = offsetX * window.devicePixelRatio;
-    const scaledY = offsetY * window.devicePixelRatio;
+    const scaledX = offsetX * window.devicePixelRatio / zoom;
+    const scaledY = offsetY * window.devicePixelRatio / zoom;
 
     const context = contextRef.current;
     context.beginPath();
@@ -49,11 +57,11 @@ const Canvas = () => {
   };
 
   const draw = (e) => {
-    if (!isDrawing || mode === null) return; // Do nothing if not drawing or no mode is selected
+    if (!isDrawing || mode === null) return;
 
     const { offsetX, offsetY } = e.nativeEvent;
-    const scaledX = offsetX * window.devicePixelRatio;
-    const scaledY = offsetY * window.devicePixelRatio;
+    const scaledX = offsetX * window.devicePixelRatio / zoom;
+    const scaledY = offsetY * window.devicePixelRatio / zoom;
 
     const context = contextRef.current;
 
@@ -61,24 +69,23 @@ const Canvas = () => {
       removeLineAtPoint(scaledX, scaledY);
     } else {
       context.globalCompositeOperation = 'source-over';
-      context.lineWidth = 2; // Pencil size
-      context.strokeStyle = 'red'; // Pencil color
+      context.lineWidth = 2;
+      context.strokeStyle = 'red';
 
       context.lineTo(scaledX, scaledY);
       context.stroke();
-      
+
       setCurrentPath([...currentPath, { x: scaledX, y: scaledY }]);
     }
   };
 
   const stopDrawing = () => {
-    if (mode === null) return; // Do nothing if no mode is selected
+    if (mode === null) return;
 
     const context = contextRef.current;
     context.closePath();
     setIsDrawing(false);
 
-    // Add the current path to the paths array
     if (mode === 'pencil') {
       setPaths([...paths, currentPath]);
     }
@@ -115,14 +122,12 @@ const Canvas = () => {
 
         acc.push(...splitPath.filter(segment => segment.length > 1));
       } else {
-        acc.push(path); // Preserve non-array paths if any
+        acc.push(path);
       }
       return acc;
     }, []);
 
     setPaths(newPaths);
-
-    // Redraw all remaining paths
     const context = contextRef.current;
     context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     redrawPaths(context, newPaths);
@@ -162,8 +167,8 @@ const Canvas = () => {
     paths.forEach((path) => {
       if (Array.isArray(path)) {
         context.beginPath();
-        context.lineWidth = 2.5; // Pencil size
-        context.strokeStyle = 'red'; // Ensure paths are drawn in red
+        context.lineWidth = 2.5;
+        context.strokeStyle = 'red';
         path.forEach((point, index) => {
           if (index === 0) {
             context.moveTo(point.x, point.y);
@@ -177,18 +182,18 @@ const Canvas = () => {
   };
 
   const getCursorStyle = () => {
-    const iconSize = 26; // Size of the icon
-    const hotspotX = iconSize / 2 - 9; // Adjust this value if necessary
-    const hotspotY = iconSize; // Set hotspot to the bottom of the icon
+    const iconSize = 26;
+    const hotspotX = iconSize / 2 - 9;
+    const hotspotY = iconSize;
 
     if (mode === 'eraser') return `url(${eraserIcon}) ${hotspotX} ${hotspotY}, auto`;
     if (mode === 'pencil') return `url(${pencilIcon}) ${hotspotX} ${hotspotY}, auto`;
-    return 'auto'; // Default cursor
+    return 'auto';
   };
 
   return (
-    <div>
-      <div style={{ position: 'absolute', zIndex: 10 }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', zIndex: 10, pointerEvents: 'auto' }}>
         <Button
           variant="contained"
           color="primary"
@@ -203,7 +208,6 @@ const Canvas = () => {
         >
           Eraser
         </Button>
-        {/* Add your PDF Viewer button here */}
       </div>
       <canvas
         ref={canvasRef}
@@ -211,8 +215,9 @@ const Canvas = () => {
           position: 'absolute',
           top: 0,
           left: 0,
-          zIndex: 1,
+          zIndex: 5,
           cursor: getCursorStyle(),
+          pointerEvents: mode ? 'auto' : 'none',
         }}
         onMouseDown={startDrawing}
         onMouseMove={draw}
