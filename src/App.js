@@ -6,10 +6,31 @@ import Canvas from './Canvas';
 function App() {
   const viewerRef = useRef(null);
   const [zoom, setZoom] = useState(1);
+  const [showCanvas, setShowCanvas] = useState(true);
 
   const handleZoom = (newZoom) => {
     setZoom(newZoom);
   };
+
+  const resetView = () => {
+    setShowCanvas(false);
+    setTimeout(() => {
+      setShowCanvas(true);
+    }, 0); // Triggers a re-render to clear the canvas
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        resetView();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className="App" style={{ position: 'relative', height: '100vh' }}>
@@ -18,7 +39,7 @@ function App() {
           <Viewer fileUrl="23_Nayem_Mehedi.pdf" onZoom={handleZoom} />
         </div>
       </Worker>
-      <Canvas viewerRef={viewerRef} zoom={zoom} />
+      {showCanvas && <Canvas viewerRef={viewerRef} zoom={zoom} />}
     </div>
   );
 }
